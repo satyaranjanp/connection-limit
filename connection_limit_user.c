@@ -198,7 +198,7 @@ long strtoi(char *str, int base) {
 }
 
 /* Function to replace sscanf to read ipv6 address */
-int addr6_parser (char *input, struct in6_addr *localaddr)
+void addr6_parser (char *input, struct in6_addr *localaddr)
 {
     char *s1 = malloc(9);
     char *s2 = malloc(9);

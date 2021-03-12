@@ -348,10 +348,10 @@ static int parse_tcpv6(int lnr, char *line)
 static int parse_tcpv4(int lnr, char *line)
 {
     uint32_t local_addr = 0, remote_addr = 0;
-    int local_port, remote_port, num, state;
+    int local_port, remote_port, state;
     uint16_t local_port_u;
     int ret = 0;
-    unsigned long rxq, txq, time_len, retr, inode, skaddr;
+    unsigned long skaddr;
     uint32_t key = 1, sock_val = 1, val = 1;
     uint64_t count;
     char *eptr;
@@ -466,7 +466,6 @@ void update_ports(char *ports)
     tmp = strdup(ports);
     uint16_t port = 0;
     int pval = 1;
-    char *eptr;
     while( (ptr = strsep(&tmp, delim)) != NULL )
     {
         ptr = trim_space(ptr);
@@ -483,7 +482,6 @@ int main(int argc, char **argv)
 
     uint64_t conn_val = 0, max_conn_val = 0;
 
-    char *eptr;
     char filename[256], ports[2048];
     verbosity = LOG_INFO;
 

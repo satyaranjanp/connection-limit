@@ -487,7 +487,7 @@ int main(int argc, char **argv)
     char filename[256], ports[2048];
     verbosity = LOG_INFO;
 
-    memset(ports,'\0',2048)
+    memset(ports,'\0',2048);
 
     /* TODO take iface and max conns */
     while ((opt = getopt_long(argc, argv, "hq",

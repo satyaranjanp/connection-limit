@@ -136,7 +136,7 @@ FILE* set_log_file(void)
     return info;
 }
 
-int get_length(char *str)
+int get_length(const char *str)
 {
     int len = 0;
     if (*str == '\0')
@@ -487,6 +487,8 @@ int main(int argc, char **argv)
     char filename[256], ports[2048];
     verbosity = LOG_INFO;
 
+    memset(ports,'\0',2048)
+
     /* TODO take iface and max conns */
     while ((opt = getopt_long(argc, argv, "hq",
                               long_options, &long_index)) != -1) {
@@ -579,7 +581,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (ports != NULL)
+    if (get_length(ports))
     {
         log_info("Port list is %s\n", ports);
         update_ports(ports);

@@ -478,7 +478,7 @@ void update_ports(char *ports)
 int main(int argc, char **argv)
 {
     struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
-    int opt, long_index = 0, key = 1, len = 0;
+    int opt, long_index = 0, key = 0, len = 0;
 
     uint64_t conn_val = 0, max_conn_val = 0;
 
@@ -550,6 +550,8 @@ int main(int argc, char **argv)
         log_err("Failed to update prog fd in the chain");
         exit(EXIT_FAILURE);
     }
+    /* closing map fd to avoid stale map */
+    close(prev_prog_map_fd);
 
     int next_prog_map_fd = bpf_obj_get(xdp_cl_ingress_next_prog);
     if (next_prog_map_fd < 0) {

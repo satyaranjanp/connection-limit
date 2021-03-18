@@ -51,7 +51,7 @@ struct bpf_map_def SEC("maps") cl_conn_count = {
     .type           = BPF_MAP_TYPE_HASH,
     .key_size       = sizeof(uint32_t),
     .value_size     = sizeof(uint64_t),
-    .max_entries    = 2,
+    .max_entries    = 1,
 };
 
 /* Holds the TCP connection limit set by the user */

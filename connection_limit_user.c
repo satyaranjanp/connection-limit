@@ -254,7 +254,7 @@ static int parse_tcpv6(int lnr, char *line)
     uint16_t local_port_u;
     unsigned long skaddr;
     struct in6_addr localaddr;
-    uint32_t key = 1, sock_val = 1, val = 1;
+    uint32_t key = 0, sock_val = 1, val = 1;
     uint64_t count;
     char *eptr;
     char *proc_info[30], *locals[3], *remotes[3];
@@ -352,7 +352,7 @@ static int parse_tcpv4(int lnr, char *line)
     uint16_t local_port_u;
     int ret = 0;
     unsigned long skaddr;
-    uint32_t key = 1, sock_val = 1, val = 1;
+    uint32_t key = 0, sock_val = 1, val = 1;
     uint64_t count;
     char *eptr;
     /* Skip first line of PATH_PROCNET_TCP that has heading */

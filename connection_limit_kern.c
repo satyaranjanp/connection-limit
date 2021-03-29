@@ -124,7 +124,7 @@ static __always_inline int is_ipv6_loopback(uint32_t addr6[])
 SEC("tracepoint/sock/inet_sock_set_state")
 int trace_inet_sock_set_state(struct inet_sock_state_ctx *args)
 {
-    uint32_t key = 1, map_val = 1, *ret_val;
+    uint32_t key = 0, map_val = 1, *ret_val;
     uint64_t *val;
 
     /* Ignore if it is not a TCP socket */
@@ -333,7 +333,7 @@ int _xdp_limit_conn(struct xdp_md *ctx)
     if (!bpf_map_lookup_elem(&cl_tcp_conns, &dstport))
         return XDP_PASS;
 
-    uint32_t key = 1, rkey = 1, dkey = 1;
+    uint32_t key = 0, rkey = 0, dkey = 0;
     uint64_t *conn_count_val, *max_conn_val, *recv_count_val, *drop_count_val;
 
     recv_count_val = bpf_map_lookup_elem(&cl_recv_count_map, &rkey);

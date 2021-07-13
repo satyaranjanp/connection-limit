@@ -1,3 +1,6 @@
+// Copyright Contributors to the L3AF Project.
+// SPDX-License-Identifier: GPL-2.0
+
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdio.h>

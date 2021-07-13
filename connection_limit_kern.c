@@ -1,3 +1,6 @@
+// Copyright Contributors to the L3AF Project.
+// SPDX-License-Identifier: GPL-2.0
+
 /* TCP Connection Limit
  */
 #define KBUILD_MODNAME "foo"

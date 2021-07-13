@@ -1,3 +1,6 @@
+// Copyright Contributors to the L3AF Project.
+// SPDX-License-Identifier: GPL-2.0
+
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
 #define PATH_PROCNET_TCP "/proc/net/tcp"

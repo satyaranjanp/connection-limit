@@ -183,25 +183,19 @@ int str_parser (char *input, char *delimiter, char *word_array[])
     return 0;
 }
 
-void cpy(char *src,char *des)
-{
-     while(*(des++) = *(src++));
-     *des = '\0';
-}
-
 long strtoi(char *str, int base) {
     char *endptr;
     long long_var = strtol(str, &endptr, base);
-    //out of range, Found extra chars at end
+    /* out of range, Found extra chars at end of string */
     if (*endptr != '\0' || str == endptr) {
-        fprintf(stderr, "out of range %s and str is %s \n", endptr, str);
+        fprintf(stderr, "string to int conversion failed. out of range %s and str is %s \n", endptr, str);
     }
 
     return long_var;
 }
 
 /* Function to replace sscanf to read ipv6 address */
-void addr6_parser (char *input, struct in6_addr *localaddr)
+void addr6_parser(char *input, struct in6_addr *localaddr)
 {
     char *s1 = malloc(9);
     char *s2 = malloc(9);
@@ -209,13 +203,13 @@ void addr6_parser (char *input, struct in6_addr *localaddr)
     char *s4 = malloc(9);
 
     /* copy every 8 hexa characters as a word */
-    strncpy(s1, input, sizeof(s1));
+    strncpy(s1, input, 8);
     s1[8] = '\0';
-    strncpy(s2, input+8, sizeof(s2));
+    strncpy(s2, input+8, 8);
     s2[8] = '\0';
-    strncpy(s3, input+16, sizeof(s3));
+    strncpy(s3, input+16, 8);
     s3[8] = '\0';
-    strncpy(s4, input+24, sizeof(s4));
+    strncpy(s4, input+24, 8);
     s4[8] = '\0';
 
     localaddr->s6_addr32[0] = (int)(strtoi(s1, 16));
@@ -253,7 +247,7 @@ char * trim_space(char *str)
 static int parse_tcpv6(int lnr, char *line)
 {
     char localaddr_str[64], remoteaddr_str[64];
-    int local_port, rem_port, state, ret = 0;
+    int local_port, rem_port, state, len, ret = 0;
     uint16_t local_port_u;
     unsigned long skaddr;
     struct in6_addr localaddr;
@@ -276,14 +270,18 @@ static int parse_tcpv6(int lnr, char *line)
         return 0;
 
     str_parser(proc_info[1], ":", locals);
-    cpy(locals[0], localaddr_str);
+    len = get_length(locals[0]);
+    strncpy(localaddr_str, locals[0], len);
+    localaddr_str[len] = '\0';
     local_port = (int)(strtoi(locals[1], 16));
 
     /* Get remote address and remote port */
     if (get_length(proc_info[2]) == 0 )
         return 0;
     str_parser(proc_info[2], ":", remotes);
-    cpy(remotes[0], remoteaddr_str);
+    len = get_length(remotes[0]);
+    strncpy(remoteaddr_str, remotes[0], len);
+    remoteaddr_str[len] = '\0';
     rem_port = (int)(strtoi(remotes[1], 16));
 
     local_port_u = local_port;
@@ -418,6 +416,7 @@ static int parse_tcpv4(int lnr, char *line)
             log_info("Skipping ipv4 loopback connections in established state\n");
             return 0;
         }
+
         if (bpf_map_lookup_elem(map_fd[2], &local_port_u, &val) == 0) {
             ret = bpf_map_update_elem(map_fd[3], &skaddr, &sock_val, 0);
             if (ret) {
@@ -564,7 +563,6 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
     }
-
     log_info("Max connections value is %lu\n", max_conn_val);
 
     int ret = bpf_map_update_elem(map_fd[1], &key, &max_conn_val, 0);

@@ -45,18 +45,18 @@ static int xdp_unlink_bpf_chain(const char *map_filename) {
     if (map_fd > 0) {
         ret = bpf_map_delete_elem(map_fd, &key);
         if (ret != 0)
-            log_err("xdp chain remove program failed");
+            log_err("Failed to remove XDP program from the chain");
     }
     else
-        log_info("Previous program's map is not found");
+        log_info("Failed to fetch previous XDP program in the chain");
 
     if (remove(xdp_cl_ingress_next_prog) < 0) {
-        log_warn("Failed to remove map file - xdp_cl_ingress_next_prog");
+        log_warn("Failed to remove link to next XDP program in the chain");
     }
     return ret;
 }
 
-static void exit_clean(int sig)
+static void signal_handler(int sig)
 {
     log_info("Received signal %d", sig);
     int i = 0;
@@ -64,12 +64,9 @@ static void exit_clean(int sig)
     for (i=0; i<MAP_COUNT; i++) {
         close(map_fd[i]);
     }
-#if 0
-    if (bpf_set_link_xdp_fd(ifindex, -1, 0) < 0) {
-        log_info("ERROR: link set xdp fd failed on %d\n", ifindex);
-    }
-#endif
-    exit(0);
+    if (info != NULL)
+        fclose(info);
+    exit(EXIT_SUCCESS);
 }
 
 static const struct option long_options[] = {
@@ -139,7 +136,7 @@ FILE* set_log_file(void)
     return info;
 }
 
-int get_length(const char *str)
+static int get_length(const char *str)
 {
     int len = 0;
     if (*str == '\0')
@@ -150,14 +147,14 @@ int get_length(const char *str)
    return len;
 }
 
-int is_ipv4_loopback(uint32_t *addr4)
+static int is_ipv4_loopback(uint32_t *addr4)
 {
     if ((*addr4 & 0xff) == ipv4_lo_addr)
         return 1;
     return 0;
 }
 
-int is_ipv6_loopback(struct in6_addr *addr6)
+static int is_ipv6_loopback(struct in6_addr *addr6)
 {
     if ((addr6->s6_addr32[0] == 0) && (addr6->s6_addr32[1] == 0) &&
         (addr6->s6_addr32[2] == 0) && (addr6->s6_addr32[3] == 1))
@@ -169,7 +166,7 @@ int is_ipv6_loopback(struct in6_addr *addr6)
     return 0;
 }
 
-int str_parser (char *input, char *delimiter, char *word_array[])
+static int str_split(char *input, char *delimiter, char *word_array[])
 {
     char *tmp, *ptr;
     int n = 0;
@@ -183,19 +180,19 @@ int str_parser (char *input, char *delimiter, char *word_array[])
     return 0;
 }
 
-long strtoi(char *str, int base) {
+static long strtoi(char *str, int base) {
     char *endptr;
     long long_var = strtol(str, &endptr, base);
     /* out of range, Found extra chars at end of string */
     if (*endptr != '\0' || str == endptr) {
-        fprintf(stderr, "string to int conversion failed. out of range %s and str is %s \n", endptr, str);
+        fprintf(stderr,
+                "Failed to convert string %s to %s \n", str, endptr);
     }
-
     return long_var;
 }
 
 /* Function to replace sscanf to read ipv6 address */
-void addr6_parser(char *input, struct in6_addr *localaddr)
+static void addr6_parser(char *input, struct in6_addr *localaddr)
 {
     char *s1 = malloc(9);
     char *s2 = malloc(9);
@@ -223,7 +220,7 @@ void addr6_parser(char *input, struct in6_addr *localaddr)
     free(s4);
 }
 
-char * trim_space(char *str)
+static char* trim_space(char *str)
 {
     char *end;
     /* skip leading whitespace */
@@ -246,8 +243,8 @@ char * trim_space(char *str)
    in ESTABLISHED state */
 static int parse_tcpv6(int lnr, char *line)
 {
-    char localaddr_str[64], remoteaddr_str[64];
-    int local_port, rem_port, state, len, ret = 0;
+    char localaddr_str[64];
+    int local_port, state, len, ret = 0;
     uint16_t local_port_u;
     unsigned long skaddr;
     struct in6_addr localaddr;
@@ -263,26 +260,22 @@ static int parse_tcpv6(int lnr, char *line)
         return 0;
     }
 
-    str_parser(line, " ", proc_info);
+    str_split(line, " ", proc_info);
 
     /* Get local address and local port */
     if (get_length(proc_info[1]) == 0 )
         return 0;
 
-    str_parser(proc_info[1], ":", locals);
+    str_split(proc_info[1], ":", locals);
     len = get_length(locals[0]);
     strncpy(localaddr_str, locals[0], len);
     localaddr_str[len] = '\0';
     local_port = (int)(strtoi(locals[1], 16));
 
-    /* Get remote address and remote port */
     if (get_length(proc_info[2]) == 0 )
         return 0;
-    str_parser(proc_info[2], ":", remotes);
+    str_split(proc_info[2], ":", remotes);
     len = get_length(remotes[0]);
-    strncpy(remoteaddr_str, remotes[0], len);
-    remoteaddr_str[len] = '\0';
-    rem_port = (int)(strtoi(remotes[1], 16));
 
     local_port_u = local_port;
 
@@ -297,22 +290,8 @@ static int parse_tcpv6(int lnr, char *line)
     /* Get state */
     if (get_length(proc_info[3]) == 0 )
         return 0;
+
     state = (int)(strtoi(proc_info[3], 16));
-#if 0
-    if (state == TCP_LISTEN) {/* Listening connections */
-        if (is_ipv6_loopback(&localaddr)) {
-            log_info("Skipping loopback ipv6 connections in listen state\n");
-            return 0;
-        }
-        ret = bpf_map_update_elem(map_fd[2], &local_port_u, &port_val, 0);
-        if (ret) {
-            log_info("Failed to update listen port in bpf map\n");
-            perror("bpf_update_elem");
-            return 1;
-        }
-        log_info("Updated ipv6 Listen address %s\n", line);
-    }
-#endif
     if (state == TCP_ESTABLISHED) {
         if (is_ipv6_loopback(&localaddr)) {
             log_info("Skipping loopback ipv6 connections in established state\n");
@@ -348,8 +327,8 @@ static int parse_tcpv6(int lnr, char *line)
    in ESTABLISHED state */
 static int parse_tcpv4(int lnr, char *line)
 {
-    uint32_t local_addr = 0, remote_addr = 0;
-    int local_port, remote_port, state;
+    uint32_t local_addr = 0;
+    int local_port, state;
     uint16_t local_port_u;
     int ret = 0;
     unsigned long skaddr;
@@ -368,21 +347,18 @@ static int parse_tcpv4(int lnr, char *line)
         return 0;
     }
 
-    str_parser(line, " ", proc_info);
+    str_split(line, " ", proc_info);
 
     /* Get local address and local port */
     if (get_length(proc_info[1]) == 0 )
         return 0;
-    str_parser(proc_info[1], ":", locals);
+    str_split(proc_info[1], ":", locals);
     local_addr = (uint32_t)(strtoi(locals[0], 16));
     local_port = (int)(strtoi(locals[1], 16));
 
-    /* Get remote address and remote port */
     if (get_length(proc_info[2]) == 0 )
         return 0;
-    str_parser(proc_info[2], ":", remotes);
-    remote_addr = (uint32_t)(strtoi(remotes[0], 16));
-    remote_port = (int)(strtoi(remotes[1], 16));
+    str_split(proc_info[2], ":", remotes);
 
     local_port_u = local_port;
 
@@ -394,23 +370,8 @@ static int parse_tcpv4(int lnr, char *line)
     /* Get state */
     if (get_length(proc_info[3]) == 0 )
         return 0;
-    state = (int)(strtoi(proc_info[3], 16));
 
-#if 0
-    if (state == TCP_LISTEN) {/* Listening connections */
-        if (is_ipv4_loopback(&local_addr)) {
-            log_info("Skipping ipv4 loopback connections in listen state\n");
-            return 0;
-        }
-        ret = bpf_map_update_elem(map_fd[2], &local_port_u, &port_val, 0);
-        if (ret) {
-            log_info("Failed to update listen port in the bpf map\n");
-            perror("bpf_update_elem");
-            return 1;
-        }
-        log_info("Updated ipv4 Listen address %s\n", line);
-    }
-#endif
+    state = (int)(strtoi(proc_info[3], 16));
     if (state == TCP_ESTABLISHED) {
         if (is_ipv4_loopback(&local_addr)) {
             log_info("Skipping ipv4 loopback connections in established state\n");
@@ -462,7 +423,7 @@ static void parse_tcp(char *file, int (*proc)(int, char*))
     fclose(procinfo);
 }
 
-void update_ports(char *ports)
+static void update_ports(char *ports)
 {
     char *tmp, *ptr;
     tmp = strdup(ports);
@@ -489,7 +450,6 @@ int main(int argc, char **argv)
 
     memset(ports,'\0',2048);
 
-    /* TODO take iface and max conns */
     while ((opt = getopt_long(argc, argv, "hq",
                               long_options, &long_index)) != -1) {
         switch (opt) {
@@ -598,20 +558,23 @@ int main(int argc, char **argv)
     parse_tcp(PATH_PROCNET_TCP, parse_tcpv4);
     parse_tcp(PATH_PROCNET_TCP6, parse_tcpv6);
 
-#if 0
-    if (bpf_set_link_xdp_fd(ifindex, prog_fd[1], 0) < 0) {
-        log_err("ERROR: link set xdp fd failed on %d\n", ifindex);
-        return 1;
-    }
-#endif
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
+    signal(SIGKILL, signal_handler);
 
-    signal(SIGINT, exit_clean);
-    signal(SIGTERM, exit_clean);
-    signal(SIGKILL, exit_clean);
-
+    /* Dummy loop to make it a continuously running process */
     while(1) {
         fflush(info);
         sleep(600);
     }
     return 0;
 }
+
+static int get_length(const char *str);
+static int is_ipv4_loopback(uint32_t *addr4);
+static int is_ipv6_loopback(struct in6_addr *addr6);
+static int str_split(char *input, char *delimiter, char *word_array[]);
+static long strtoi(char *str, int base);
+static void addr6_parser(char *input, struct in6_addr *localaddr);
+static char* trim_space(char *str);
+static void update_ports(char *ports);

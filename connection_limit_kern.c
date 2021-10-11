@@ -22,6 +22,7 @@
 #define TCP_ECE  0x40
 #define TCP_CWR  0x80
 #define TCP_FLAGS (TCP_FIN|TCP_SYN|TCP_RST|TCP_ACK|TCP_URG|TCP_ECE|TCP_CWR)
+
 /* First Octet for IPv4 localhost address range 127.[0-255].[0-255].[0-255] */
 #define ipv4_lo_addr 0x7F
 /* IPv6 localhost */
@@ -136,43 +137,6 @@ int trace_inet_sock_set_state(struct inet_sock_state_ctx *args)
 
     uint64_t skaddr = (uint64_t)args->skaddr;
     uint16_t sport = args->sport;
-
-#if 0
-    if (args->newstate == TCP_LISTEN)
-    {
-        if (args->family == AF_INET6)
-        {
-            struct in6_addr src_addr;
-
-            /* Read source address from the probe context */
-            if (bpf_probe_read(&src_addr.s6_addr32,
-                    sizeof(src_addr.s6_addr32), args->saddr_v6) != 0)
-                return 0;
-
-            /* Ignore if it is ipv6 loopback connection */
-            if (is_ipv6_loopback(src_addr.s6_addr32))
-                return 0;
-
-            bpf_map_update_elem(&cl_tcp_conns, &sport, &map_val, BPF_ANY);
-            return 0;
-        }
-        if (args->family == AF_INET)
-        {
-            uint32_t src_addr;
-
-            /* Read source address from the probe context */
-            if (bpf_probe_read(&src_addr, sizeof(src_addr), args->saddr) != 0)
-                return 0;
-
-            /* Ignore if it is ipv4 loopback connection */
-            if (is_ipv4_loopback(&src_addr))
-                return 0;
-
-            bpf_map_update_elem(&cl_tcp_conns, &sport, &map_val, BPF_ANY);
-            return 0;
-        }
-    }
-#endif
 
     /* Check for TCP connections being opened */
     if (args->newstate == TCP_ESTABLISHED)

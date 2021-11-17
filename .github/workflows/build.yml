@@ -1,18 +1,23 @@
-name: Build connection-limit
-on: [push]
+name: Build ratelimiting
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:bionic
+    env:
+      repo: connection-limit
 
-    steps:
-
-      - name: Run a one-line script
-        run: echo Hello from Octo Organization
-
-      - name: setup build dir
+    steps:          
+      - name: Setup build environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bc \
+          apt-get update
+          apt-get install -y bc \
           bison \
           build-essential \
           clang \
@@ -21,6 +26,7 @@ jobs:
           flex \
           gcc-8 \
           gcc-multilib \
+          git \
           gnutls-bin \
           libc6-dev \
           libcurl4-openssl-dev \
@@ -35,19 +41,19 @@ jobs:
           llvm \
           rsync
       
-      - name: clone kernel
+      - name: Clone dependencies 
         run: |
-          sudo chown -R $(whoami):$(whoami) /usr
-          git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git /usr/src/linux
+          chmod 777 /usr
           LINUX_SRC_DIR=/usr/src/linux
+          git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git $LINUX_SRC_DIR
           cd $LINUX_SRC_DIR
           make defconfig
-      - run: |
-          cd /usr/src/linux/samples/bpf/
-          git clone https://github.com/satyaranjanp/connection-limit.git/
-      - name: build
+      - name: Clone kernel function repository
+        uses: actions/checkout@v2
+
+      - name: Build kernel function
         run: |
-          cd /usr/src/linux/samples/bpf/connection-limit
-          ls
+          cd $GITHUB_WORKSPACE/../
+          cp -r $repo /usr/src/linux/samples/bpf/
+          cd /usr/src/linux/samples/bpf/$repo
           make
-      - run: echo "🍏 This job's status is ${{ job.status }}."

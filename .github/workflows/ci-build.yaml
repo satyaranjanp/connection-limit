@@ -9,12 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:bionic
-    env:
-      REPO: connection-limit
-      BUILD_PATH: samples/bpf
+      image: ubuntu:bionic 
 
-    steps:          
+    steps:
       - name: Setup build environment
         run: |
           apt-get update
@@ -41,21 +38,25 @@ jobs:
           linux-tools-generic \
           llvm \
           rsync
+
+      - name: Set up env variables
+        run: |
+          echo "REPO=connection-limit" >> $GITHUB_ENV
+          echo "BPF_PATH=samples/bpf" >> $GITHUB_ENV
           echo "LINUX_SRC_PATH=$GITHUB_WORKSPACE/linux" >> $GITHUB_ENV
       
       - name: Clone dependencies 
         run: |
-          echo "$LINUX_SRC_PATH"
-          git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git ${{ env.LINUX_SRC_PATH }}
+          git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git $LINUX_SRC_PATH
           cd $LINUX_SRC_PATH
           make defconfig
           
       - name: Clone kernel function repository
         uses: actions/checkout@v2
         with:
-          path: linux/${{ env.BUILD_PATH }}/${{ env.REPO }}
+          path: linux/${{ env.BPF_PATH }}/${{ env.REPO }}
 
       - name: Build kernel function
         run: |
-          cd $LINUX_SRC_PATH/$BUILD_PATH/$REPO
+          cd $LINUX_SRC_PATH/$BPF_PATH/$REPO
           make

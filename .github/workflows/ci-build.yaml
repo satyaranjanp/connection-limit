@@ -45,9 +45,9 @@ jobs:
       
       - name: Clone dependencies 
         run: |
-          echo "${{ env.LINUX_SRC_PATH }}"
+          echo "$LINUX_SRC_PATH"
           git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git ${{ env.LINUX_SRC_PATH }}
-          cd ${{ env.LINUX_SRC_PATH }}
+          cd $LINUX_SRC_PATH
           make defconfig
           
       - name: Clone kernel function repository
@@ -57,5 +57,5 @@ jobs:
 
       - name: Build kernel function
         run: |
-          cd ${{ env.LINUX_SRC_PATH }}/$BUILD_PATH/$REPO
+          cd $LINUX_SRC_PATH/$BUILD_PATH/$REPO
           make

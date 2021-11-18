@@ -11,7 +11,9 @@ jobs:
     container:
       image: ubuntu:bionic
     env:
-      repo: connection-limit
+      REPO: connection-limit
+      LINUX_SRC_PATH: src/linux
+      BUILD_PATH: src/linux/samples/bpf
 
     steps:          
       - name: Setup build environment
@@ -43,18 +45,18 @@ jobs:
       
       - name: Clone dependencies 
         run: |
-          chmod 777 /usr
-          LINUX_SRC_DIR=/usr/src/linux
+          LINUX_SRC_DIR=$GITHUB_WORKSPACE/$LINUX_SRC_PATH
           git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git $LINUX_SRC_DIR
           cd $LINUX_SRC_DIR
           make defconfig
- 
+
       - name: Clone kernel function repository
         uses: actions/checkout@v2
+        with:
+          path: ${{ env.BUILD_PATH }}/${{ env.REPO }}
 
       - name: Build kernel function
         run: |
-          cd $GITHUB_WORKSPACE/../
-          cp -r $repo /usr/src/linux/samples/bpf/
-          cd /usr/src/linux/samples/bpf/$repo
+          HOME=$GITHUB_WORKSPACE
+          cd $GITHUB_WORKSPACE/$BUILD_PATH/$REPO
           make

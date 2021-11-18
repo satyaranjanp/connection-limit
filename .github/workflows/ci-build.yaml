@@ -12,7 +12,7 @@ jobs:
       image: ubuntu:bionic 
 
     steps:
-      - name: Setup build environment
+      - name: Set up build environment
         run: |
           apt-get update
           apt-get install -y bc \
@@ -39,7 +39,7 @@ jobs:
           llvm \
           rsync
 
-      - name: Set up env variables
+      - name: Set env variables
         run: |
           echo "REPO=connection-limit" >> $GITHUB_ENV
           echo "BPF_PATH=samples/bpf" >> $GITHUB_ENV

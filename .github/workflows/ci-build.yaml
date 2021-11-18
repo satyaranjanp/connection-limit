@@ -41,12 +41,15 @@ jobs:
           linux-tools-generic \
           llvm \
           rsync
+          echo "LINUX_SRC_PATH=$GITHUB_WORKSPACE/linux" >> $GITHUB_ENV
       
       - name: Clone dependencies 
         run: |
-          git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git linux
-          cd linux
+          echo "${{ env.LINUX_SRC_PATH }}"
+          git clone --branch v5.1 --depth 1 https://github.com/torvalds/linux.git ${{ env.LINUX_SRC_PATH }}
+          cd ${{ env.LINUX_SRC_PATH }}
           make defconfig
+          
       - name: Clone kernel function repository
         uses: actions/checkout@v2
         with:
@@ -54,7 +57,5 @@ jobs:
 
       - name: Build kernel function
         run: |
-          export LINUX_SRC_PATH=$GITHUB_WORKSPACE/linux
-          echo $LINUX_SRC_PATH
-          cd $LINUX_SRC_PATH/$BUILD_PATH/$REPO
+          cd ${{ env.LINUX_SRC_PATH }}/$BUILD_PATH/$REPO
           make

@@ -14,6 +14,7 @@ jobs:
     steps:
       - name: Set up build environment
         run: |
+          uname -r
           apt-get update
           apt-get install -y bc \
           bison \
@@ -37,7 +38,8 @@ jobs:
           linux-tools-common \
           linux-tools-generic \
           llvm \
-          rsync
+          rsync \
+          uname -r
 
       - name: Set env variables
         run: |

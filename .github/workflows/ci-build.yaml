@@ -12,9 +12,12 @@ jobs:
       image: ubuntu:bionic 
 
     steps:
-      - name: Set up build environment
+      - name: kernel version
         run: |
           uname -r
+          
+      - name: Set up build environment
+        run: |
           apt-get update
           apt-get install -y bc \
           bison \
